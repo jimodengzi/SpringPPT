@@ -1,0 +1,11 @@
+# YAML
+hero:
+  hp: 88
+  sp: 8
+  level: 4
+guy:
+  hp: 22
+  sp: 2
+  level: 2
+# 行内写法
+#  {'hero': {'hp': 88,'sp': 8,'level': 4},'guy': {'hp': 22,'sp': 2,'level': 2}}
