@@ -1,0 +1,356 @@
+pom.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.sang</groupId>
+    <artifactId>rabbitmq</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>rabbitmq</name>
+    <description>Demo project for Spring Boot</description>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.0.4.RELEASE</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>1.8</java.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+
+</project>
+
+
+application.properties
+
+spring.rabbitmq.host=192.168.66.130
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=sang
+spring.rabbitmq.password=123
+
+Message.java
+
+package org.sang.rabbitmq;
+
+import java.io.Serializable;
+import java.util.Date;
+
+public class Message implements Serializable {
+    private String content;
+    private Date date;
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "content='" + content + '\'' +
+                ", date=" + date +
+                '}';
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
+}
+
+DirectReceiver.java
+
+
+package org.sang.rabbitmq;
+
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+
+@Component
+public class DirectReceiver {
+    @RabbitListener(queues = "hello-queue")
+    public void handler1(String msg) {
+        System.out.println("DirectReceiver:" + msg);
+    }
+}
+
+
+FanoutReceiver.java
+
+package org.sang.rabbitmq;
+
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.annotation.RabbitListeners;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
+
+@Component
+public class FanoutReceiver {
+    @RabbitListener(queues = "queue-one")
+    public void handler1(String message) {
+        System.out.println("FanoutReceiver:handler1:" + message);
+    }
+    @RabbitListener(queues = "queue-two")
+    public void handler2(String message) {
+        System.out.println("FanoutReceiver:handler2:" + message);
+    }
+}
+
+HeaderReceiver.java
+package org.sang.rabbitmq;
+
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+
+@Component
+public class HeaderReceiver {
+    @RabbitListener(queues = "name-queue")
+    public void handler1(byte[] msg) {
+        System.out.println("HeaderReceiver:name:"
+                + new String(msg, 0, msg.length));
+    }
+
+    @RabbitListener(queues = "age-queue")
+    public void handler2(byte[] msg) {
+        System.out.println("HeaderReceiver:age:"
+                + new String(msg, 0, msg.length));
+    }
+}
+
+RabbitDirectConfig.java
+
+package org.sang.rabbitmq;
+
+import org.springframework.amqp.core.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class RabbitDirectConfig {
+    public final static String DIRECTNAME = "sang-direct";
+    @Bean
+    Queue queue() {
+        return new Queue("hello-queue");
+    }
+    @Bean
+    DirectExchange directExchange() {
+        return new DirectExchange(DIRECTNAME, true, false);
+    }
+    @Bean
+    Binding binding() {
+        return BindingBuilder.bind(queue())
+                .to(directExchange()).with("direct");
+    }
+}
+
+
+RabbitFanoutConfig.java
+
+package org.sang.rabbitmq;
+
+import org.springframework.amqp.core.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class RabbitFanoutConfig {
+    public final static String FANOUTNAME = "sang-fanout";
+    @Bean
+    FanoutExchange fanoutExchange() {
+        return new FanoutExchange(FANOUTNAME, true, false);
+    }
+    @Bean
+    Queue queueOne() {
+        return new Queue("queue-one");
+    }
+    @Bean
+    Queue queueTwo() {
+        return new Queue("queue-two");
+    }
+    @Bean
+    Binding bindingOne() {
+        return BindingBuilder.bind(queueOne()).to(fanoutExchange());
+    }
+    @Bean
+    Binding bindingTwo() {
+        return BindingBuilder.bind(queueTwo()).to(fanoutExchange());
+    }
+}
+
+
+RabbitHeaderConfig.java
+package org.sang.rabbitmq;
+
+import org.springframework.amqp.core.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Configuration
+public class RabbitHeaderConfig {
+    public final static String HEADERNAME = "sang-header";
+    @Bean
+    HeadersExchange headersExchange() {
+        return new HeadersExchange(HEADERNAME, true, false);
+    }
+    @Bean
+    Queue queueName() {
+        return new Queue("name-queue");
+    }
+    @Bean
+    Queue queueAge() {
+        return new Queue("age-queue");
+    }
+    @Bean
+    Binding bindingName() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("name", "sang");
+        return BindingBuilder.bind(queueName())
+                .to(headersExchange()).whereAny(map).match();
+    }
+    @Bean
+    Binding bindingAge() {
+        return BindingBuilder.bind(queueAge())
+                .to(headersExchange()).where("age").exists();
+    }
+}
+
+
+RabbitmqApplication.java
+
+package org.sang.rabbitmq;
+
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+@SpringBootApplication
+public class RabbitmqApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(RabbitmqApplication.class, args);
+    }
+}
+
+
+
+RabbitProducerConfig.java
+
+
+package org.sang.rabbitmq;
+
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class RabbitProducerConfig {
+}
+
+
+RabbitTopicConfig.java
+
+package org.sang.rabbitmq;
+
+import org.springframework.amqp.core.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class RabbitTopicConfig {
+    public final static String TOPICNAME = "sang-topic";
+    @Bean
+    TopicExchange topicExchange() {
+        return new TopicExchange(TOPICNAME, true, false);
+    }
+    @Bean
+    Queue xiaomi() {
+        return new Queue("xiaomi");
+    }
+    @Bean
+    Queue huawei() {
+        return new Queue("huawei");
+    }
+    @Bean
+    Queue phone() {
+        return new Queue("phone");
+    }
+    @Bean
+    Binding xiaomiBinding() {
+        return BindingBuilder.bind(xiaomi()).to(topicExchange())
+                .with("xiaomi.#");
+    }
+    @Bean
+    Binding huaweiBinding() {
+        return BindingBuilder.bind(huawei()).to(topicExchange())
+                .with("huawei.#");
+    }
+    @Bean
+    Binding phoneBinding() {
+        return BindingBuilder.bind(phone()).to(topicExchange())
+                .with("#.phone.#");
+    }
+}
+
+TopicReceiver.java
+
+package org.sang.rabbitmq;
+
+import org.springframework.amqp.rabbit.annotation.RabbitHandler;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+
+@Component
+public class TopicReceiver {
+    @RabbitListener(queues = "phone")
+    public void handler1(String message) {
+        System.out.println("PhoneReceiver:"+ message);
+    }
+    @RabbitListener(queues = "xiaomi")
+    public void handler2(String message) {
+        System.out.println("XiaoMiReceiver:"+message);
+    }
+    @RabbitListener(queues = "huawei")
+    public void handler3(String message) {
+        System.out.println("HuaWeiReceiver:"+message);
+    }
+}
