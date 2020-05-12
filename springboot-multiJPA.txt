@@ -1,0 +1,377 @@
+pom.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>org.sang</groupId>
+	<artifactId>mutijpa</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>mutijpa</name>
+	<description>Demo project for Spring Boot</description>
+
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.0.3.RELEASE</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<java.version>1.8</java.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.alibaba</groupId>
+			<artifactId>druid-spring-boot-starter</artifactId>
+			<version>1.1.10</version>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+
+</project>
+
+
+
+test/org/sang/MutijpaApplicationTests.java
+
+
+package org.sang;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.sang.dao1.UserDao;
+import org.sang.dao2.UserDao2;
+import org.sang.model.User;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import java.util.List;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class MutijpaApplicationTests {
+	@Autowired
+	UserDao userDao;
+	@Autowired
+	UserDao2 userDao2;
+	@Test
+	public void contextLoads() {
+		List<User> all = userDao.findAll();
+		System.out.println(all);
+		List<User> all2 = userDao2.findAll();
+		System.out.println(all2);
+	}
+}
+
+
+
+resources/application.properties
+
+spring.datasource.one.password=123
+spring.datasource.one.username=root
+spring.datasource.one.url=jdbc:mysql:///chapter05-1
+spring.datasource.one.type=com.alibaba.druid.pool.DruidDataSource
+
+spring.datasource.two.password=123
+spring.datasource.two.username=root
+spring.datasource.two.url=jdbc:mysql:///chapter05-2
+spring.datasource.two.type=com.alibaba.druid.pool.DruidDataSource
+
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL57InnoDBDialect
+spring.jpa.properties.database=mysql
+spring.jpa.properties.hibernate.hbm2ddl.auto=update
+spring.jpa.properties.show-sql= true
+
+
+
+src/java/org/sang/model/User.java
+
+package org.sang.model;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
+/**
+ * Created by sang on 2018/7/16.
+ */
+@Entity(name = "t_user")
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+    private String name;
+    private String gender;
+    private Integer age;
+    //省略getter/setter
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", gender='" + gender + '\'' +
+                ", age=" + age +
+                '}';
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+}
+
+
+src/java/org/sang/dao1/UserDao.java
+
+package org.sang.dao1;
+
+import org.sang.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+/**
+ * Created by sang on 2018/7/16.
+ */
+public interface UserDao extends JpaRepository<User,Integer>{
+}
+\\
+src/java/org/sang/dao2/UserDao2.java
+package org.sang.dao2;
+
+import org.sang.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+/**
+ * Created by sang on 2018/7/16.
+ */
+public interface UserDao2 extends JpaRepository<User,Integer>{
+}
+
+
+src/java/org/sang/config/DataSourceConfig.java
+package org.sang.config;
+
+import com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceBuilder;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+
+import javax.sql.DataSource;
+
+/**
+ * Created by sang on 2018/7/16.
+ */
+@Configuration
+public class DataSourceConfig {
+    @Bean
+    @ConfigurationProperties("spring.datasource.one")
+    @Primary
+    DataSource dsOne() {
+        return DruidDataSourceBuilder.create().build();
+    }
+    @Bean
+    @ConfigurationProperties("spring.datasource.two")
+    DataSource dsTwo() {
+        return DruidDataSourceBuilder.create().build();
+    }
+}
+
+
+src/java/org/sang/config/JpaConfigOne.java
+package org.sang.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
+import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+import javax.annotation.Resource;
+import javax.sql.DataSource;
+
+/**
+ * Created by sang on 2018/7/16.
+ */
+
+@Configuration
+@EnableTransactionManagement
+@EnableJpaRepositories(basePackages = "org.sang.dao1",
+        entityManagerFactoryRef = "entityManagerFactoryBeanOne",
+        transactionManagerRef = "platformTransactionManagerOne")
+public class JpaConfigOne {
+    @Resource(name = "dsOne")
+    DataSource dsOne;
+    @Autowired
+    JpaProperties jpaProperties;
+    @Bean
+    @Primary
+    LocalContainerEntityManagerFactoryBean entityManagerFactoryBeanOne(
+            EntityManagerFactoryBuilder builder) {
+        return builder.dataSource(dsOne)
+                .properties(jpaProperties.getProperties())
+                .packages("org.sang.model")
+                .persistenceUnit("pu1")
+                .build();
+    }
+    @Bean
+    PlatformTransactionManager platformTransactionManagerOne(
+            EntityManagerFactoryBuilder builder) {
+        LocalContainerEntityManagerFactoryBean factoryOne = entityManagerFactoryBeanOne(builder);
+        return new JpaTransactionManager(factoryOne.getObject());
+    }
+}
+
+
+src/java/org/sang/config/JpaConfigTwo.java
+package org.sang.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
+import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+import javax.annotation.Resource;
+import javax.sql.DataSource;
+
+/**
+ * Created by sang on 2018/7/16.
+ */
+
+@Configuration
+@EnableTransactionManagement
+@EnableJpaRepositories(basePackages = "org.sang.dao2",
+entityManagerFactoryRef = "entityManagerFactoryBeanTwo",
+transactionManagerRef = "platformTransactionManagerTwo")
+public class JpaConfigTwo {
+    @Resource(name = "dsTwo")
+    DataSource dsTwo;
+    @Autowired
+    JpaProperties jpaProperties;
+    @Bean
+    LocalContainerEntityManagerFactoryBean entityManagerFactoryBeanTwo(
+            EntityManagerFactoryBuilder builder) {
+        return builder.dataSource(dsTwo)
+                .properties(jpaProperties.getProperties())
+                .packages("org.sang.model")
+                .persistenceUnit("pu2")
+                .build();
+    }
+    @Bean
+    PlatformTransactionManager platformTransactionManagerTwo(
+            EntityManagerFactoryBuilder builder) {
+        LocalContainerEntityManagerFactoryBean factoryTwo = entityManagerFactoryBeanTwo(builder);
+        return new JpaTransactionManager(factoryTwo.getObject());
+    }
+}
+
+
+\src\main\java\org\sang\UserController.java
+package org.sang;
+
+import org.sang.dao1.UserDao;
+import org.sang.dao2.UserDao2;
+import org.sang.model.User;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * Created by sang on 2018/7/17.
+ */
+@RestController
+public class UserController {
+    @Autowired
+    UserDao userDao;
+    @Autowired
+    UserDao2 userDao2;
+    @GetMapping("/test1")
+    public void test1() {
+        User u1 = new User();
+        u1.setAge(55);
+        u1.setName("鲁迅");
+        u1.setGender("男");
+        userDao.save(u1);
+        User u2 = new User();
+        u2.setAge(80);
+        u2.setName("泰戈尔");
+        u2.setGender("男");
+        userDao2.save(u2);
+    }
+}
+
